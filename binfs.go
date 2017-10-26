@@ -24,6 +24,11 @@ func Open(name string) (File, error) {
 	return DefaultRoot.Open(name)
 }
 
+// Find find a deep child node
+func Find(name ...string) *Node {
+	return DefaultRoot.Find(name...)
+}
+
 // Walk walk the default root
 func Walk(fn NodeWalker) {
 	DefaultRoot.Walk(fn)
