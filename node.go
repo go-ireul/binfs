@@ -79,6 +79,9 @@ func (n *node) ensureChild(name string) *node {
 func (n *node) ensure(name ...string) *node {
 	t := n
 	for _, v := range name {
+		if v == "" {
+			continue
+		}
 		t = t.ensureChild(v)
 	}
 	return t
@@ -87,6 +90,9 @@ func (n *node) ensure(name ...string) *node {
 func (n *node) find(name ...string) *node {
 	t := n
 	for _, v := range name {
+		if v == "" {
+			continue
+		}
 		if t != nil && t.nodes != nil {
 			t = t.nodes[v]
 		} else {
