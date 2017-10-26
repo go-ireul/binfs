@@ -23,3 +23,8 @@ func Load(c *Chunk) {
 func Open(name string) (File, error) {
 	return DefaultRoot.Open(name)
 }
+
+// Walk walk the default root
+func Walk(fn NodeWalker) {
+	DefaultRoot.Walk(fn)
+}
