@@ -4,13 +4,13 @@ import (
 	"net/http"
 )
 
-type fs struct{}
+type fileSystem struct{}
 
-func (fs) Open(name string) (http.File, error) {
+func (fileSystem) Open(name string) (http.File, error) {
 	return Open(name)
 }
 
 // FileSystem creates http.FileSystem implementation
 func FileSystem() http.FileSystem {
-	return fs{}
+	return fileSystem{}
 }

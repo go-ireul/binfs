@@ -1,6 +1,8 @@
 package binfs
 
 import (
+	"os"
+	"strings"
 	"time"
 )
 
@@ -11,11 +13,19 @@ type Chunk struct {
 	Data []byte
 }
 
+var fsRoot = &node{}
+
 // Load load a file into zone
-func Load(f *Chunk) {
+func Load(c *Chunk) {
+	fsRoot.ensure(c.Path...).chunk = c
 }
 
 // Open open a file, a partial mocking of *os.File
 func Open(name string) (File, error) {
-	return &file{}, nil
+	comps := strings.Split(name, "/")
+	n := fsRoot.find(comps...)
+	if n == nil {
+		return nil, os.ErrNotExist
+	}
+	return newFile(n)
 }
