@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"sort"
 	"strings"
 	"time"
 )
@@ -100,6 +101,22 @@ func (n *node) find(name ...string) *node {
 		}
 	}
 	return t
+}
+
+func (n *node) sortedNodes() []*node {
+	if n == nil || n.nodes == nil {
+		return []*node{}
+	}
+	out := []*node{}
+	keys := []string{}
+	for k := range n.nodes {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		out = append(out, n.nodes[k])
+	}
+	return out
 }
 
 func (n *node) toFileInfo() os.FileInfo {
