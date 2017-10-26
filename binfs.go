@@ -27,5 +27,5 @@ func Open(name string) (File, error) {
 	if n == nil {
 		return nil, os.ErrNotExist
 	}
-	return newFile(n)
+	return newFile(n), nil
 }
