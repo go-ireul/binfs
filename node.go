@@ -9,13 +9,6 @@ import (
 	"time"
 )
 
-type node struct {
-	path  []string
-	name  string
-	nodes map[string]*node
-	chunk *Chunk
-}
-
 // dummy io.ReadSeeker for directory
 type dirReadSeeker struct{}
 
@@ -62,40 +55,84 @@ func (fileInfo) Sys() interface{} {
 	return nil
 }
 
-func (n *node) ensureChild(name string) *node {
-	if n.path == nil {
-		n.path = []string{}
+// Node represents a internal node in file tree
+type Node struct {
+	Path     []string
+	Name     string
+	Children map[string]*Node
+	Chunk    *Chunk
+}
+
+// NodeWalker function to walk over all nodes
+type NodeWalker func(n *Node)
+
+// Walk walk over all nodes
+func (n *Node) Walk(fn NodeWalker) {
+	if n != nil {
+		fn(n)
+		if n.Children != nil {
+			for _, v := range n.Children {
+				v.Walk(fn)
+			}
+		}
 	}
-	if n.nodes == nil {
-		n.nodes = map[string]*node{}
-	}
-	c := n.nodes[name]
+}
+
+// Load load a file into zone
+func (n *Node) Load(c *Chunk) {
+	n.Ensure(c.Path...).Chunk = c
+}
+
+// Open open a file, a partial mocking of *os.File
+func (n *Node) Open(name string) (File, error) {
+	comps := strings.Split(name, "/")
+	c := n.Find(comps...)
 	if c == nil {
-		c = &node{name: name, path: append(n.path, name)}
-		n.nodes[name] = c
+		return nil, os.ErrNotExist
+	}
+	return newFile(c), nil
+}
+
+// Child Find or create a child
+func (n *Node) Child(name string) *Node {
+	if n.Path == nil {
+		n.Path = []string{}
+	}
+	if n.Children == nil {
+		n.Children = map[string]*Node{}
+	}
+	c := n.Children[name]
+	if c == nil {
+		c = &Node{
+			Name: name,
+			Path: append(n.Path, name),
+		}
+		n.Children[name] = c
 	}
 	return c
 }
 
-func (n *node) ensure(name ...string) *node {
+// Ensure find or create a deep child
+func (n *Node) Ensure(name ...string) *Node {
 	t := n
 	for _, v := range name {
 		if v == "" {
 			continue
 		}
-		t = t.ensureChild(v)
+		t = t.Child(v)
 	}
 	return t
 }
 
-func (n *node) find(name ...string) *node {
+// Find a deep child
+func (n *Node) Find(name ...string) *Node {
 	t := n
 	for _, v := range name {
 		if v == "" {
 			continue
 		}
-		if t != nil && t.nodes != nil {
-			t = t.nodes[v]
+		if t != nil && t.Children != nil {
+			t = t.Children[v]
 		} else {
 			return nil
 		}
@@ -103,38 +140,41 @@ func (n *node) find(name ...string) *node {
 	return t
 }
 
-func (n *node) sortedNodes() []*node {
-	if n == nil || n.nodes == nil {
-		return []*node{}
+// SortedChildren returns children sorted by name
+func (n *Node) SortedChildren() []*Node {
+	if n == nil || n.Children == nil {
+		return []*Node{}
 	}
-	out := []*node{}
+	out := []*Node{}
 	keys := []string{}
-	for k := range n.nodes {
+	for k := range n.Children {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		out = append(out, n.nodes[k])
+		out = append(out, n.Children[k])
 	}
 	return out
 }
 
-func (n *node) toFileInfo() os.FileInfo {
+// FileInfo creates a related os.FileInfo
+func (n *Node) FileInfo() os.FileInfo {
 	info := fileInfo{
-		name: "/" + strings.Join(n.path, "/"),
+		name: "/" + strings.Join(n.Path, "/"),
 	}
-	if n.chunk != nil {
-		info.date = n.chunk.Date
-		info.size = int64(len(n.chunk.Data))
+	if n.Chunk != nil {
+		info.date = n.Chunk.Date
+		info.size = int64(len(n.Chunk.Data))
 	} else {
 		info.isDir = true
 	}
 	return info
 }
 
-func (n *node) toReadSeeker() io.ReadSeeker {
-	if n.chunk != nil {
-		return bytes.NewReader(n.chunk.Data)
+// ReadSeeker creates a related io.ReadSeeker
+func (n *Node) ReadSeeker() io.ReadSeeker {
+	if n.Chunk != nil {
+		return bytes.NewReader(n.Chunk.Data)
 	}
 	return dirReadSeeker{}
 }

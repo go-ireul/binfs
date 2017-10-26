@@ -18,7 +18,7 @@ type File interface {
 type file struct {
 	io.ReadSeeker
 	info os.FileInfo
-	path []string
+	node *Node
 	// idx defines current cursor while executing Readdir(n int)
 	idx int
 }
@@ -31,31 +31,31 @@ func (f file) Close() error {
 func (f file) Readdir(n int) ([]os.FileInfo, error) {
 	// out
 	out := []os.FileInfo{}
-	// find nodes
-	nodes := fsRoot.find(f.path...).sortedNodes()
+	// Find children
+	children := f.node.SortedChildren()
 	// handle n > 0
 	if n > 0 {
 		var err error
 		// if empty
-		if len(nodes) == 0 {
+		if len(children) == 0 {
 			return out, io.EOF
 		}
 		// determine iteration max
 		max := f.idx + n
-		if max > len(nodes) {
-			max = len(nodes)
+		if max > len(children) {
+			max = len(children)
 			err = io.EOF
 		}
 		// output
 		for i := f.idx; i < max; i++ {
-			out = append(out, nodes[i].toFileInfo())
+			out = append(out, children[i].FileInfo())
 		}
 		f.idx = max - 1
 		return out, err
 	}
-	// dir all nodes
-	for _, sub := range nodes {
-		out = append(out, sub.toFileInfo())
+	// dir all children
+	for _, sub := range children {
+		out = append(out, sub.FileInfo())
 	}
 	return out, nil
 }
@@ -65,10 +65,10 @@ func (f file) Stat() (os.FileInfo, error) {
 }
 
 // newFile creates a file from a node
-func newFile(n *node) *file {
+func newFile(n *Node) *file {
 	return &file{
-		ReadSeeker: n.toReadSeeker(),
-		path:       n.path,
-		info:       n.toFileInfo(),
+		ReadSeeker: n.ReadSeeker(),
+		info:       n.FileInfo(),
+		node:       n,
 	}
 }
