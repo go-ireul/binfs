@@ -1,8 +1,12 @@
+// node.go
+// node is a node in virtual fs tree
+
 package binfs
 
 import (
 	"bytes"
 	"io"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -53,6 +57,13 @@ func (f fileInfo) IsDir() bool {
 
 func (fileInfo) Sys() interface{} {
 	return nil
+}
+
+// Chunk a file in a binfs
+type Chunk struct {
+	Path []string
+	Date time.Time
+	Data []byte
 }
 
 // Node represents a internal node in file tree
@@ -177,4 +188,18 @@ func (n *Node) ReadSeeker() io.ReadSeeker {
 		return bytes.NewReader(n.Chunk.Data)
 	}
 	return dirReadSeeker{}
+}
+
+// nodeWrapper wraps Node to http.FileSystem
+type nodeWrapper struct {
+	n *Node
+}
+
+func (n nodeWrapper) Open(file string) (http.File, error) {
+	return n.n.Open(file)
+}
+
+// FileSystem creates http.FileSystem implementation
+func (n *Node) FileSystem() http.FileSystem {
+	return nodeWrapper{n: n}
 }

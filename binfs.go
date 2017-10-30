@@ -1,15 +1,11 @@
+// binfs.go
+// expose functions of DefaultRoot to package scope
+
 package binfs
 
 import (
-	"time"
+	"net/http"
 )
-
-// Chunk a file in a binfs
-type Chunk struct {
-	Path []string
-	Date time.Time
-	Data []byte
-}
 
 // DefaultRoot the default root of BinFS
 var DefaultRoot = &Node{}
@@ -32,4 +28,9 @@ func Find(name ...string) *Node {
 // Walk walk the default root
 func Walk(fn NodeWalker) {
 	DefaultRoot.Walk(fn)
+}
+
+// FileSystem creates http.FileSystem implementation
+func FileSystem() http.FileSystem {
+	return DefaultRoot.FileSystem()
 }

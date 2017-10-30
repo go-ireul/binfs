@@ -1,3 +1,6 @@
+// file.go
+// provides a http.File implementation
+
 package binfs
 
 import (
