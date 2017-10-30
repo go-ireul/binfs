@@ -17,4 +17,13 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(string(s))
+	binfs.Walk(func(n *binfs.Node) {
+		var s string
+		if n.FileInfo().IsDir() {
+			s = "D"
+		} else {
+			s = "F"
+		}
+		fmt.Println("Node:", s, n.Path)
+	})
 }
