@@ -35,44 +35,39 @@ func main() {
 	if len(os.Args) < 2 {
 		exit("no directory is provided")
 	}
-	if len(os.Args) > 2 {
-		exit("more than one directories are provided")
-	}
 
-	wd, err := filepath.Abs(filepath.Clean(os.Args[1]))
-	if err != nil {
-		exit(err.Error())
-	}
-
+	wds := os.Args[1:]
 	all := []File{}
-
-	err = filepath.Walk(wd, func(path string, info os.FileInfo, err error) error {
-		_, file := filepath.Split(path)
-		// skip hidden directories
-		if info.IsDir() && strings.HasPrefix(file, ".") {
-			return filepath.SkipDir
-		}
-		// skip hidden files
-		if !info.IsDir() && !strings.HasPrefix(file, ".") {
-			rel, err := filepath.Rel(wd, path)
-			if err != nil {
-				exit(err.Error())
+	for _, wd := range wds {
+		err := filepath.Walk(wd, func(path string, info os.FileInfo, err error) error {
+			_, file := filepath.Split(path)
+			// skip hidden directories
+			if info.IsDir() && strings.HasPrefix(file, ".") {
+				return filepath.SkipDir
 			}
-			comps := strings.Split(rel, string(filepath.Separator))
-			for i, v := range comps {
-				comps[i] = fmt.Sprintf("%q", v)
+			// skip hidden files
+			if !info.IsDir() && !strings.HasPrefix(file, ".") {
+				rel, err := filepath.Rel(wd, path)
+				if err != nil {
+					exit(err.Error())
+				}
+				comps := strings.Split(rel, string(filepath.Separator))
+				for i, v := range comps {
+					comps[i] = fmt.Sprintf("%q", v)
+				}
+				comps = append([]string{fmt.Sprintf("%q", wd)}, comps...)
+				all = append(all, File{
+					ID:       fmt.Sprintf("%02x", sha1.Sum([]byte(rel))),
+					FullPath: path,
+					Date:     info.ModTime(),
+					Path:     comps,
+				})
 			}
-			all = append(all, File{
-				ID:       fmt.Sprintf("%02x", sha1.Sum([]byte(rel))),
-				FullPath: path,
-				Date:     info.ModTime(),
-				Path:     comps,
-			})
+			return nil
+		})
+		if err != nil {
+			exit(err.Error())
 		}
-		return nil
-	})
-	if err != nil {
-		exit(err.Error())
 	}
 
 	l(`package main`)
