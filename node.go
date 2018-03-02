@@ -114,9 +114,12 @@ func (n *Node) Child(name string) *Node {
 	}
 	c := n.Children[name]
 	if c == nil {
+		nPath := make([]string, len(n.Path))
+		copy(nPath, n.Path)
+		nPath = append(nPath, name)
 		c = &Node{
 			Name: name,
-			Path: append(n.Path, name),
+			Path: nPath,
 		}
 		n.Children[name] = c
 	}
