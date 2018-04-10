@@ -39,6 +39,9 @@ func main() {
 	wds := os.Args[1:]
 	all := []File{}
 	for _, wd := range wds {
+		if strings.HasSuffix(wd, "/") {
+			wd = wd[0 : len(wd)-1]
+		}
 		err := filepath.Walk(wd, func(path string, info os.FileInfo, err error) error {
 			_, file := filepath.Split(path)
 			// skip hidden directories
